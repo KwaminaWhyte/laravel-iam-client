@@ -1,0 +1,404 @@
+# Adamus Laravel IAM Client
+
+A Laravel package for integrating with the Adamus IAM (Identity and Access Management) service for centralized authentication and authorization.
+
+## Features
+
+- 🔐 **Centralized Authentication** - Authenticate users against a central IAM service
+- 🎫 **JWT Token Management** - Secure token-based authentication with session storage
+- 🔑 **Permission & Role Management** - Check user permissions and roles via IAM API
+- 🚀 **Easy Installation** - Simple artisan command for setup
+- 🎨 **Inertia.js Support** - Pre-built React login component
+- 🛡️ **Middleware Protection** - Protect routes with IAM authentication
+- 💾 **Local User Sync** - Automatically sync IAM users to local database
+- ⚡ **Request Caching** - Minimize API calls with intelligent caching
+
+## Requirements
+
+- PHP 8.2 or higher
+- Laravel 11.0 or higher
+- Inertia.js (for the login component)
+- React (for the login component)
+
+## Installation
+
+### 1. Install via Composer
+
+You can install the package via composer. Since this is a local package, add it to your project's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../packages/adamus/laravel-iam-client"
+        }
+    ],
+    "require": {
+        "adamus/laravel-iam-client": "*"
+    }
+}
+```
+
+Then run:
+
+```bash
+composer require adamus/laravel-iam-client
+```
+
+Alternatively, if you're using this as a standalone package from a repository:
+
+```bash
+composer require adamus/laravel-iam-client
+```
+
+### 2. Run Installation Command
+
+Run the installation command to set up the package:
+
+```bash
+php artisan iam:install
+```
+
+This command will:
+- Publish the configuration file to `config/iam.php`
+- Publish the login page component to `resources/js/pages/auth/login.tsx`
+- Update your `config/auth.php` with IAM guard configuration
+- Guide you through environment variable setup
+
+### 3. Configure Environment Variables
+
+Add the following to your `.env` file:
+
+```env
+# Required
+IAM_BASE_URL=http://your-iam-service.com/api/v1
+AUTH_GUARD=iam
+
+# Optional (with defaults)
+IAM_TIMEOUT=10
+IAM_VERIFY_SSL=true
+IAM_USER_MODEL=App\Models\User
+```
+
+### 4. Ensure User Model Exists
+
+Make sure you have a User model at `app/Models/User.php` with at least these fields:
+- `id` (or uuid)
+- `name`
+- `email`
+- `password`
+
+## Usage
+
+### Basic Authentication
+
+The package automatically registers a login route at `/login`. Users can authenticate using their IAM credentials.
+
+### Protecting Routes
+
+Use the `iam.auth` middleware to protect your routes:
+
+```php
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('iam.auth')->group(function () {
+    Route::get('/dashboard', function () {
+        return inertia('dashboard');
+    })->name('dashboard');
+
+    // More protected routes...
+});
+```
+
+### Getting the Authenticated User
+
+```php
+use Illuminate\Support\Facades\Auth;
+
+// Get the current user
+$user = Auth::guard('iam')->user();
+
+// Check if user is authenticated
+if (Auth::guard('iam')->check()) {
+    // User is authenticated
+}
+
+// Get user data
+$userId = $user->id;
+$userName = $user->name;
+$userEmail = $user->email;
+```
+
+### Checking Permissions
+
+```php
+use Illuminate\Support\Facades\Auth;
+
+// Check if user has a specific permission
+if (Auth::guard('iam')->hasPermission('forms.create')) {
+    // User has permission
+}
+
+// In your controller
+public function store(Request $request)
+{
+    if (!Auth::guard('iam')->hasPermission('forms.create')) {
+        abort(403, 'Unauthorized');
+    }
+
+    // Create form...
+}
+```
+
+### Checking Roles
+
+```php
+use Illuminate\Support\Facades\Auth;
+
+// Check if user has a specific role
+if (Auth::guard('iam')->hasRole('admin')) {
+    // User has role
+}
+```
+
+### Manual Login (Programmatic)
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+use Illuminate\Support\Facades\Auth;
+
+public function login(Request $request, IAMService $iamService)
+{
+    $response = $iamService->login(
+        $request->email,
+        $request->password
+    );
+
+    if ($response) {
+        // Store token in session
+        session(['iam_token' => $response['access_token']]);
+
+        // Authenticate user with IAM guard
+        $user = Auth::guard('iam')->user();
+
+        return redirect()->route('dashboard');
+    }
+
+    return back()->withErrors(['email' => 'Invalid credentials']);
+}
+```
+
+### Logout
+
+```php
+use Illuminate\Support\Facades\Auth;
+use Adamus\LaravelIamClient\Services\IAMService;
+
+public function logout(Request $request, IAMService $iamService)
+{
+    // Logout from IAM
+    $token = session('iam_token');
+    if ($token) {
+        $iamService->logout($token);
+    }
+
+    // Clear local session
+    Auth::guard('iam')->logout();
+    session()->forget('iam_token');
+
+    return redirect()->route('login');
+}
+```
+
+### Using IAM Service Directly
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+
+public function checkAccess(IAMService $iamService)
+{
+    $token = session('iam_token');
+
+    // Verify token
+    $userData = $iamService->verifyToken($token);
+
+    // Check permission
+    $hasPermission = $iamService->hasPermission($token, 'users.edit');
+
+    // Check role
+    $hasRole = $iamService->hasRole($token, 'admin');
+
+    // Refresh token
+    $newToken = $iamService->refreshToken($token);
+
+    // Logout from all devices
+    $iamService->logoutAll($token);
+}
+```
+
+## Configuration
+
+The configuration file is published to `config/iam.php`:
+
+```php
+return [
+    // Base URL of your IAM service
+    'base_url' => env('IAM_BASE_URL', 'http://localhost:8000/api/v1'),
+
+    // API timeout in seconds
+    'timeout' => env('IAM_TIMEOUT', 10),
+
+    // Verify SSL certificates
+    'verify_ssl' => env('IAM_VERIFY_SSL', true),
+
+    // Default guard name
+    'guard' => 'iam',
+
+    // User model class
+    'user_model' => env('IAM_USER_MODEL', \App\Models\User::class),
+
+    // Token configuration
+    'token_header' => 'Authorization',
+    'token_prefix' => 'Bearer',
+];
+```
+
+## Frontend Integration
+
+### Login Component
+
+The package includes a pre-built Inertia.js + React login component. After installation, it will be available at `resources/js/pages/auth/login.tsx`.
+
+The component uses Inertia's `useForm` hook and posts to the `iam.login` route.
+
+### Customizing the Login Page
+
+You can customize the login page by editing `resources/js/pages/auth/login.tsx`:
+
+```tsx
+import { useForm } from '@inertiajs/react';
+
+export default function Login() {
+    const { data, setData, post, processing, errors } = useForm({
+        email: '',
+        password: '',
+        remember: false,
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+        post(route('iam.login'));
+    };
+
+    return (
+        // Your custom UI
+    );
+}
+```
+
+## Available Routes
+
+The package automatically registers these routes:
+
+| Method | URI | Name | Middleware |
+|--------|-----|------|------------|
+| GET | `/login` | `login` | `guest` |
+| POST | `/login` | `iam.login` | `guest` |
+| POST | `/logout` | `logout` | `iam.auth` |
+| GET | `/auth/me` | `iam.me` | `iam.auth` |
+| POST | `/auth/check-permission` | `iam.check-permission` | `iam.auth` |
+| POST | `/auth/check-role` | `iam.check-role` | `iam.auth` |
+| POST | `/auth/refresh` | `iam.refresh` | `iam.auth` |
+| POST | `/auth/logout-all` | `iam.logout-all` | `iam.auth` |
+
+## Middleware
+
+### `iam.auth`
+
+The primary middleware for protecting routes. It:
+- Checks for IAM token in session
+- Verifies token with IAM service (with 1-minute cache)
+- Stores user data in request attributes
+- Redirects to login if unauthenticated
+
+### `iam.authenticate`
+
+Alternative middleware that uses Laravel's Auth guard directly:
+- Checks authentication via IAM guard
+- Redirects to login if not authenticated
+- Returns 401 for JSON requests
+
+## How It Works
+
+1. **User Login**: When a user submits the login form, credentials are sent to the IAM service
+2. **Token Storage**: On successful authentication, the JWT token is stored in Laravel session
+3. **User Sync**: User data from IAM is synced to your local database
+4. **Session Data**: Permissions and roles are cached in session for quick access
+5. **Request Protection**: Middleware checks token validity on each protected request
+6. **Token Caching**: Valid tokens are cached for 1 minute to reduce API calls
+7. **Permission Checks**: Permissions/roles are checked from session first, then IAM API if needed
+
+## Architecture
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│   Browser   │────────▶│ Laravel App  │────────▶│ IAM Service │
+│  (Inertia)  │◀────────│  (Package)   │◀────────│   (API)     │
+└─────────────┘         └──────────────┘         └─────────────┘
+                              │
+                              ▼
+                        ┌──────────────┐
+                        │ Local Users  │
+                        │   Database   │
+                        └──────────────┘
+```
+
+## Troubleshooting
+
+### Token Verification Fails
+
+Check your `IAM_BASE_URL` in `.env` and ensure it's pointing to the correct IAM service.
+
+### User Not Found After Login
+
+Ensure your User model matches the `user_model` configuration and has the required fields.
+
+### Middleware Not Working
+
+Make sure you've set `AUTH_GUARD=iam` in your `.env` file and the IAM guard is registered in `config/auth.php`.
+
+### CORS Issues
+
+If you're running IAM on a different domain, ensure CORS is properly configured on the IAM service.
+
+## Security Considerations
+
+- Always use HTTPS in production
+- Set `IAM_VERIFY_SSL=true` in production
+- Tokens are stored in encrypted Laravel sessions
+- Local passwords are placeholder values - actual auth is via IAM
+- Session regeneration on login prevents session fixation
+- 1-minute token cache balances security and performance
+
+## Testing
+
+To test the package installation in your application:
+
+```bash
+# Test login flow
+php artisan tinker
+
+use Adamus\LaravelIamClient\Services\IAMService;
+$service = app(IAMService::class);
+$response = $service->login('user@example.com', 'password');
+dd($response);
+```
+
+## License
+
+This package is open-sourced software licensed under the [MIT license](LICENSE.md).
+
+## Support
+
+For issues, questions, or contributions, please contact the Adamus development team.
