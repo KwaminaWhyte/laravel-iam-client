@@ -50,12 +50,10 @@ class IAMClientServiceProvider extends ServiceProvider
         });
 
         // Register middleware aliases
-        $kernel = $this->app->make(Kernel::class);
-        $kernel->appendMiddlewareToGroup('web', IAMSessionAuth::class);
         $this->app['router']->aliasMiddleware('iam.auth', IAMSessionAuth::class);
         $this->app['router']->aliasMiddleware('iam.authenticate', IAMAuthenticate::class);
 
-        // Load routes
+        // Load routes - they will be wrapped in web middleware by the application
         $this->loadRoutesFrom(__DIR__.'/../routes/auth.php');
 
         // Publish config

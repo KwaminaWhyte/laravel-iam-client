@@ -7,6 +7,7 @@ A Laravel package for integrating with the Adamus IAM (Identity and Access Manag
 - 🔐 **Centralized Authentication** - Authenticate users against a central IAM service
 - 🎫 **JWT Token Management** - Secure token-based authentication with session storage
 - 🔑 **Permission & Role Management** - Check user permissions and roles via IAM API
+- 👥 **User/Department/Position Management** - Fetch and manage organizational data from IAM
 - 🚀 **Easy Installation** - Simple artisan command for setup
 - 🎨 **Inertia.js Support** - Pre-built React login component
 - 🛡️ **Middleware Protection** - Protect routes with IAM authentication
@@ -234,6 +235,167 @@ public function checkAccess(IAMService $iamService)
 
     // Logout from all devices
     $iamService->logoutAll($token);
+}
+```
+
+### Managing Users, Departments, and Positions
+
+The package provides methods to fetch and manage users, departments, and positions from the IAM system:
+
+#### User Management
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+
+public function manageUsers(IAMService $iamService)
+{
+    $token = session('iam_token');
+
+    // Get all users (with optional pagination/filters)
+    $users = $iamService->getUsers($token, [
+        'page' => 1,
+        'per_page' => 15,
+        'search' => 'john'
+    ]);
+
+    // Get a specific user
+    $user = $iamService->getUser($token, $userId);
+
+    // Create a new user
+    $newUser = $iamService->createUser($token, [
+        'name' => 'John Doe',
+        'email' => 'john@example.com',
+        'password' => 'password123',
+        'status' => 'active'
+    ]);
+
+    // Update a user
+    $updatedUser = $iamService->updateUser($token, $userId, [
+        'name' => 'Jane Doe',
+        'status' => 'active'
+    ]);
+
+    // Delete a user
+    $iamService->deleteUser($token, $userId);
+}
+```
+
+#### Department Management
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+
+public function manageDepartments(IAMService $iamService)
+{
+    $token = session('iam_token');
+
+    // Get all departments
+    $departments = $iamService->getDepartments($token, [
+        'page' => 1,
+        'per_page' => 20
+    ]);
+
+    // Get a specific department
+    $department = $iamService->getDepartment($token, $departmentId);
+
+    // Create a new department
+    $newDepartment = $iamService->createDepartment($token, [
+        'name' => 'Engineering',
+        'description' => 'Engineering Department',
+        'parent_department_id' => null,
+        'manager_id' => $userId
+    ]);
+
+    // Update a department
+    $updatedDepartment = $iamService->updateDepartment($token, $departmentId, [
+        'name' => 'Software Engineering',
+        'description' => 'Updated description'
+    ]);
+
+    // Delete a department
+    $iamService->deleteDepartment($token, $departmentId);
+}
+```
+
+#### Position Management
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+
+public function managePositions(IAMService $iamService)
+{
+    $token = session('iam_token');
+
+    // Get all positions
+    $positions = $iamService->getPositions($token, [
+        'page' => 1,
+        'per_page' => 20
+    ]);
+
+    // Get a specific position
+    $position = $iamService->getPosition($token, $positionId);
+
+    // Get positions by department
+    $departmentPositions = $iamService->getPositionsByDepartment($token, $departmentId);
+
+    // Create a new position
+    $newPosition = $iamService->createPosition($token, [
+        'department_id' => $departmentId,
+        'title' => 'Senior Developer',
+        'description' => 'Senior software developer position',
+        'level' => 'senior',
+        'salary_min' => 80000,
+        'salary_max' => 120000,
+        'reports_to_position_id' => $managerPositionId
+    ]);
+
+    // Update a position
+    $updatedPosition = $iamService->updatePosition($token, $positionId, [
+        'title' => 'Lead Developer',
+        'level' => 'lead'
+    ]);
+
+    // Delete a position
+    $iamService->deletePosition($token, $positionId);
+}
+```
+
+#### Example Controller Using IAM Data
+
+```php
+use Adamus\LaravelIamClient\Services\IAMService;
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    public function __construct(private IAMService $iamService)
+    {
+    }
+
+    public function index(Request $request)
+    {
+        $token = session('iam_token');
+
+        $users = $this->iamService->getUsers($token, [
+            'page' => $request->get('page', 1),
+            'per_page' => 15,
+            'search' => $request->get('search')
+        ]);
+
+        return inertia('users/index', [
+            'users' => $users
+        ]);
+    }
+
+    public function show(string $id)
+    {
+        $token = session('iam_token');
+        $user = $this->iamService->getUser($token, $id);
+
+        return inertia('users/show', [
+            'user' => $user
+        ]);
+    }
 }
 ```
 
