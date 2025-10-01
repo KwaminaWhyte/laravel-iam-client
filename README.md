@@ -25,29 +25,7 @@ A Laravel package for integrating with the Adamus IAM (Identity and Access Manag
 
 ### 1. Install via Composer
 
-You can install the package via composer. Since this is a local package, add it to your project's `composer.json`:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../packages/adamus/laravel-iam-client"
-        }
-    ],
-    "require": {
-        "adamus/laravel-iam-client": "*"
-    }
-}
-```
-
-Then run:
-
-```bash
-composer require adamus/laravel-iam-client
-```
-
-Alternatively, if you're using this as a standalone package from a repository:
+Install the package using Composer:
 
 ```bash
 composer require adamus/laravel-iam-client
