@@ -630,4 +630,27 @@ class IAMService
             return null;
         }
     }
+
+    /**
+     * Get users in a specific department
+     */
+    public function getUsersByDepartment(string $token, string $departmentId): ?array
+    {
+        try {
+            $response = $this->client->get("departments/{$departmentId}/users", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM get users by department failed', [
+                'error' => $e->getMessage(),
+                'department_id' => $departmentId,
+            ]);
+
+            return null;
+        }
+    }
 }
