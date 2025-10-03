@@ -1,18 +1,39 @@
-# Adamus Laravel IAM Client
+# Adamus Laravel IAM
 
-A Laravel package for integrating with the Adamus IAM (Identity and Access Management) service for centralized authentication and authorization.
+A complete Laravel package for Identity and Access Management (IAM) that can be installed as either a **Client** or **Server**.
+
+## Dual-Mode Package
+
+This package can be installed in two modes:
+
+### Client Mode
+Use your application to authenticate against a central IAM server. Perfect for microservices and distributed applications.
+
+### Server Mode
+Run the complete IAM authentication service. Manage users, roles, permissions, departments, and positions centrally.
 
 ## Features
 
+### Client Features
 - 🔐 **Centralized Authentication** - Authenticate users against a central IAM service
 - 🎫 **JWT Token Management** - Secure token-based authentication with session storage
 - 🔑 **Permission & Role Management** - Check user permissions and roles via IAM API
 - 👥 **User/Department/Position Management** - Fetch and manage organizational data from IAM
-- 🚀 **Easy Installation** - Simple artisan command for setup
 - 🎨 **Inertia.js Support** - Pre-built React login component
 - 🛡️ **Middleware Protection** - Protect routes with IAM authentication
 - 💾 **Local User Sync** - Automatically sync IAM users to local database
 - ⚡ **Request Caching** - Minimize API calls with intelligent caching
+
+### Server Features
+- 👤 **Complete User Management** - Full CRUD operations for users
+- 🎭 **Roles & Permissions** - Powered by Spatie Laravel Permission
+- 🏢 **Department Management** - Organizational structure support
+- 💼 **Position Management** - Job positions and hierarchies
+- 🔐 **JWT Authentication** - Secure token-based auth
+- 📝 **Audit Logging** - Track all authentication and authorization events
+- 🚫 **Login Attempt Tracking** - Security monitoring and rate limiting
+- 📨 **User Invitations** - Invite system for new users
+- 🔒 **Two-Factor Authentication** - Enhanced security support
 
 ## Requirements
 
@@ -31,19 +52,45 @@ Install the package using Composer:
 composer require adamus/laravel-iam-client
 ```
 
-### 2. Run Installation Command
+### 2. Choose Installation Mode
 
-Run the installation command to set up the package:
+Run the installation command and select your preferred mode:
 
 ```bash
 php artisan iam:install
 ```
 
-This command will:
+This will prompt you to choose between:
+- **Client** - For applications that authenticate against an IAM server
+- **Server** - For running the IAM authentication service
+
+Alternatively, you can specify the mode directly:
+
+```bash
+# Install as client
+php artisan iam:install-client
+
+# Install as server
+php artisan iam:install-server
+```
+
+## Client Installation
+
+When installing as a client, the command will:
 - Publish the configuration file to `config/iam.php`
 - Publish the login page component to `resources/js/pages/auth/login.tsx`
 - Update your `config/auth.php` with IAM guard configuration
 - Guide you through environment variable setup
+
+## Server Installation
+
+When installing as a server, the command will:
+- Publish all migrations (users, roles, permissions, departments, positions, audit logs, etc.)
+- Publish all models (User, Role, Permission, Department, Position, etc.)
+- Publish API controllers for authentication and management
+- Publish API routes
+- Publish server configuration to `config/iam-server.php`
+- Guide you through dependency installation
 
 ### 3. Configure Environment Variables
 

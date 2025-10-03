@@ -5,6 +5,8 @@ namespace Adamus\LaravelIamClient;
 use Adamus\LaravelIamClient\Auth\IAMGuard;
 use Adamus\LaravelIamClient\Auth\IAMUserProvider;
 use Adamus\LaravelIamClient\Console\InstallCommand;
+use Adamus\LaravelIamClient\Console\InstallClientCommand;
+use Adamus\LaravelIamClient\Console\InstallServerCommand;
 use Adamus\LaravelIamClient\Http\Middleware\IAMAuthenticate;
 use Adamus\LaravelIamClient\Http\Middleware\IAMSessionAuth;
 use Adamus\LaravelIamClient\Services\IAMService;
@@ -70,6 +72,8 @@ class IAMClientServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 InstallCommand::class,
+                InstallClientCommand::class,
+                InstallServerCommand::class,
             ]);
         }
     }
