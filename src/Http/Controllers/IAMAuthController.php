@@ -186,7 +186,7 @@ class IAMAuthController extends Controller
     /**
      * Logout from current session
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request)
     {
         $token = session('iam_token');
 
@@ -196,14 +196,15 @@ class IAMAuthController extends Controller
 
         // Clear IAM token from session
         session()->forget('iam_token');
+        
+        // Logout the user
+        Auth::guard('iam')->logout();
 
         // Regenerate session for security
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return response()->json([
-            'message' => 'Successfully logged out',
-        ]);
+        return redirect()->route('login');
     }
 
     /**
