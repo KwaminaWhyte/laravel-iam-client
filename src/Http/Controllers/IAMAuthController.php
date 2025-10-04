@@ -49,18 +49,30 @@ class IAMAuthController extends Controller
             ]
         );
 
-        // Store IAM token and user data in session
+        // Store IAM token and user data in session BEFORE regenerating
         session([
             'iam_token' => $loginResponse['access_token'],
             'iam_permissions' => $this->extractPermissions($loginResponse),
             'iam_roles' => array_column($iamUser['roles'] ?? [], 'name'),
         ]);
 
+        \Log::info('IAM Login - Token stored in session', [
+            'token' => substr($loginResponse['access_token'], 0, 20) . '...',
+            'session_id' => session()->getId(),
+            'user_email' => $user->email,
+        ]);
+
         // Log in the user with the IAM guard
         Auth::guard('iam')->login($user, $request->filled('remember'));
 
-        // Regenerate session for security
-        $request->session()->regenerate();
+        // Save the session to ensure it persists
+        session()->save();
+
+        \Log::info('IAM Login - Session saved', [
+            'session_id' => session()->getId(),
+            'has_token' => session()->has('iam_token'),
+            'token_check' => session('iam_token') ? 'present' : 'missing',
+        ]);
 
         // Return redirect for Inertia
         return redirect()->intended(route('dashboard'));
