@@ -40,13 +40,6 @@ class IAMGuard implements Guard
         // Get token from session or Authorization header
         $token = session('iam_token') ?: $this->getTokenFromRequest();
 
-        \Log::info('IAMGuard - Getting user', [
-            'has_token' => !is_null($token),
-            'token' => $token ? substr($token, 0, 20) . '...' : null,
-            'session_id' => session()->getId(),
-            'all_session_keys' => array_keys(session()->all()),
-        ]);
-
         if (!$token) {
             return null;
         }
@@ -65,10 +58,6 @@ class IAMGuard implements Guard
 
         // Store in request attributes for the duration of this request
         $this->request->attributes->set($cacheKey, $this->user);
-
-        \Log::info('IAMGuard - User retrieved', [
-            'user_email' => $this->user ? $this->user->email : null,
-        ]);
 
         return $this->user;
     }

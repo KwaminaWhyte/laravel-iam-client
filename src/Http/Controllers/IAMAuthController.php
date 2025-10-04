@@ -62,13 +62,6 @@ class IAMAuthController extends Controller
         // Save the session to ensure it persists
         session()->save();
 
-        \Log::info('IAM Login - Token stored and session saved', [
-            'token' => substr($loginResponse['access_token'], 0, 20) . '...',
-            'session_id' => session()->getId(),
-            'user_email' => $user->email,
-            'has_token' => session()->has('iam_token'),
-        ]);
-
         // Return redirect for Inertia
         return redirect()->intended(route('dashboard'));
     }
