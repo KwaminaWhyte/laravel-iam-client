@@ -56,6 +56,13 @@ class IAMGuard implements Guard
         // Verify with IAM service and cache for this request
         $this->user = $this->provider->retrieveByIAMToken($token);
 
+        // Enrich user with session data if available (session data is more reliable)
+        if ($this->user && session()->has('iam_permissions')) {
+            $this->user->iam_token = $token;
+            $this->user->iam_permissions = session('iam_permissions', []);
+            $this->user->iam_roles = session('iam_roles', []);
+        }
+
         // Store in request attributes for the duration of this request
         $this->request->attributes->set($cacheKey, $this->user);
 
