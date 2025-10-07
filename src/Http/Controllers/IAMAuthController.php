@@ -224,4 +224,129 @@ class IAMAuthController extends Controller
             'message' => 'Successfully logged out from all devices',
         ]);
     }
+
+    // ==================== Phone/OTP Authentication ====================
+
+    /**
+     * Send OTP to phone number
+     */
+    public function sendOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
+            'purpose' => ['sometimes', 'string', 'in:login,verification,password_reset'],
+        ]);
+
+        $phone = $request->input('phone');
+        $purpose = $request->input('purpose', 'login');
+
+        $response = $this->iamService->sendOtp($phone, $purpose);
+
+        if (!$response) {
+            return response()->json([
+                'message' => 'Failed to send OTP. Please try again.',
+            ], 500);
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Login with phone and OTP
+     */
+    public function loginWithPhone(Request $request)
+    {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
+            'otp' => ['required', 'string', 'digits:6'],
+        ]);
+
+        $phone = $request->input('phone');
+        $otp = $request->input('otp');
+        $deviceName = $request->input('device_name', $request->header('User-Agent', 'Unknown Device'));
+
+        // Use IAM service to authenticate with phone and OTP
+        $loginResponse = $this->iamService->loginWithPhone($phone, $otp, $deviceName);
+
+        if (!$loginResponse) {
+            throw ValidationException::withMessages([
+                'otp' => ['Invalid or expired OTP.'],
+            ]);
+        }
+
+        $iamUser = $loginResponse['user'];
+        $userModel = config('iam.user_model', \App\Models\User::class);
+
+        // Create or update local user record
+        $user = $userModel::updateOrCreate(
+            ['email' => $iamUser['email']],
+            [
+                'name' => $iamUser['name'],
+                'email' => $iamUser['email'],
+                'password' => bcrypt('iam-managed'), // Placeholder password
+            ]
+        );
+
+        // Log in the user with the IAM guard FIRST (this regenerates the session)
+        Auth::guard('iam')->login($user, false);
+
+        // Store IAM token and user data in session AFTER login (so it goes in the new session)
+        session([
+            'iam_token' => $loginResponse['access_token'],
+            'iam_permissions' => $this->extractPermissions($loginResponse),
+            'iam_roles' => array_column($iamUser['roles'] ?? [], 'name'),
+        ]);
+
+        // Save the session to ensure it persists
+        session()->save();
+
+        // Return redirect for Inertia
+        return redirect()->intended(route('dashboard'));
+    }
+
+    /**
+     * Send phone verification OTP
+     */
+    public function verifyPhone(Request $request): JsonResponse
+    {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
+        ]);
+
+        $phone = $request->input('phone');
+
+        $response = $this->iamService->verifyPhone($phone);
+
+        if (!$response) {
+            return response()->json([
+                'message' => 'Failed to send verification OTP. Please try again.',
+            ], 500);
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Confirm phone verification with OTP
+     */
+    public function confirmPhoneVerification(Request $request): JsonResponse
+    {
+        $request->validate([
+            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
+            'otp' => ['required', 'string', 'digits:6'],
+        ]);
+
+        $phone = $request->input('phone');
+        $otp = $request->input('otp');
+
+        $response = $this->iamService->confirmPhoneVerification($phone, $otp);
+
+        if (!$response) {
+            return response()->json([
+                'message' => 'Failed to verify phone number. Please try again.',
+            ], 500);
+        }
+
+        return response()->json($response);
+    }
 }
