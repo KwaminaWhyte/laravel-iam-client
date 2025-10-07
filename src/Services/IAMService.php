@@ -216,6 +216,126 @@ class IAMService
         }
     }
 
+    // ==================== Phone/OTP Authentication ====================
+
+    /**
+     * Send OTP to phone number
+     *
+     * @param string $phone Phone number with country code
+     * @param string $purpose Purpose of OTP (login, verification, password_reset)
+     * @return array|null
+     */
+    public function sendOtp(string $phone, string $purpose = 'login'): ?array
+    {
+        try {
+            $response = $this->client->post('auth/send-otp', [
+                'json' => [
+                    'phone' => $phone,
+                    'purpose' => $purpose,
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM send OTP failed', [
+                'error' => $e->getMessage(),
+                'phone' => $phone,
+                'purpose' => $purpose,
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Login with phone and OTP
+     *
+     * @param string $phone Phone number with country code
+     * @param string $otp 6-digit OTP code
+     * @param string|null $deviceName Device name for token
+     * @return array|null
+     */
+    public function loginWithPhone(string $phone, string $otp, ?string $deviceName = null): ?array
+    {
+        try {
+            $data = [
+                'phone' => $phone,
+                'otp' => $otp,
+            ];
+
+            if ($deviceName) {
+                $data['device_name'] = $deviceName;
+            }
+
+            $response = $this->client->post('auth/login-with-phone', [
+                'json' => $data,
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM phone login failed', [
+                'error' => $e->getMessage(),
+                'phone' => $phone,
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Send phone verification OTP
+     *
+     * @param string $phone Phone number with country code
+     * @return array|null
+     */
+    public function verifyPhone(string $phone): ?array
+    {
+        try {
+            $response = $this->client->post('auth/verify-phone', [
+                'json' => [
+                    'phone' => $phone,
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM phone verification failed', [
+                'error' => $e->getMessage(),
+                'phone' => $phone,
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Confirm phone verification with OTP
+     *
+     * @param string $phone Phone number with country code
+     * @param string $otp 6-digit OTP code
+     * @return array|null
+     */
+    public function confirmPhoneVerification(string $phone, string $otp): ?array
+    {
+        try {
+            $response = $this->client->post('auth/confirm-phone-verification', [
+                'json' => [
+                    'phone' => $phone,
+                    'otp' => $otp,
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM confirm phone verification failed', [
+                'error' => $e->getMessage(),
+                'phone' => $phone,
+            ]);
+
+            return null;
+        }
+    }
+
     // ==================== User Management ====================
 
     /**
