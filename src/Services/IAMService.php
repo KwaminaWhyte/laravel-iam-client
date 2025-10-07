@@ -237,13 +237,33 @@ class IAMService
 
             return json_decode($response->getBody()->getContents(), true);
         } catch (RequestException $e) {
+            $errorMessage = $e->getMessage();
+            $errorDetails = null;
+
+            // Extract detailed error message from response if available
+            if ($e->hasResponse()) {
+                $responseBody = $e->getResponse()->getBody()->getContents();
+                $errorData = json_decode($responseBody, true);
+                
+                if (isset($errorData['errors']['phone'][0])) {
+                    $errorDetails = $errorData['errors']['phone'][0];
+                } elseif (isset($errorData['message'])) {
+                    $errorDetails = $errorData['message'];
+                }
+            }
+
             Log::error('IAM send OTP failed', [
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
+                'details' => $errorDetails,
                 'phone' => $phone,
                 'purpose' => $purpose,
             ]);
 
-            return null;
+            // Return error details for better error handling
+            return [
+                'success' => false,
+                'error' => $errorDetails ?? 'Failed to send OTP',
+            ];
         }
     }
 

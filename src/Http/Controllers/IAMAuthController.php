@@ -248,6 +248,13 @@ class IAMAuthController extends Controller
             ], 500);
         }
 
+        // Check if response contains an error
+        if (isset($response['success']) && $response['success'] === false) {
+            throw ValidationException::withMessages([
+                'phone' => [$response['error']],
+            ]);
+        }
+
         return response()->json($response);
     }
 
