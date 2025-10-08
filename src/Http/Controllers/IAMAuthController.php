@@ -233,7 +233,7 @@ class IAMAuthController extends Controller
     public function sendOtp(Request $request): JsonResponse
     {
         $request->validate([
-            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
+            'phone' => ['required', 'string', 'regex:/^0\d{9}$/'],
             'purpose' => ['sometimes', 'string', 'in:login,verification,password_reset'],
         ]);
 
@@ -264,8 +264,8 @@ class IAMAuthController extends Controller
     public function loginWithPhone(Request $request)
     {
         $request->validate([
-            'phone' => ['required', 'string', 'regex:/^[+]?[1-9]\d{1,14}$/'],
-            'otp' => ['required', 'string', 'digits:6'],
+            'phone' => ['required', 'string', 'regex:/^0\d{9}$/'],
+            'otp' => ['required', 'string', 'digits:4'],
         ]);
 
         $phone = $request->input('phone');
