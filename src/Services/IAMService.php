@@ -602,6 +602,32 @@ class IAMService
         }
     }
 
+    /**
+     * Search departments (unprotected endpoint for cross-service usage)
+     * 
+     * @param string $query Search query
+     * @return array|null
+     */
+    public function searchDepartments(string $query = ''): ?array
+    {
+        try {
+            $response = $this->client->get('departments/search', [
+                'query' => [
+                    'q' => $query,
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM search departments failed', [
+                'error' => $e->getMessage(),
+                'query' => $query,
+            ]);
+
+            return null;
+        }
+    }
+
     // ==================== Position Management ====================
 
     /**
@@ -765,6 +791,32 @@ class IAMService
             Log::error('IAM get users by position failed', [
                 'error' => $e->getMessage(),
                 'position_id' => $positionId,
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Search positions (unprotected endpoint for cross-service usage)
+     * 
+     * @param string $query Search query
+     * @return array|null
+     */
+    public function searchPositions(string $query = ''): ?array
+    {
+        try {
+            $response = $this->client->get('positions/search', [
+                'query' => [
+                    'q' => $query,
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM search positions failed', [
+                'error' => $e->getMessage(),
+                'query' => $query,
             ]);
 
             return null;
