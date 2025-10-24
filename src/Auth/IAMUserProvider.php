@@ -63,6 +63,7 @@ class IAMUserProvider implements UserProvider
             [
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
+                'phone' => $iamUser['phone'] ?? null,
                 'password' => bcrypt('iam-managed'), // Placeholder password since auth is managed by IAM
             ]
         );
@@ -105,6 +106,7 @@ class IAMUserProvider implements UserProvider
             [
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
+                'phone' => $iamUser['phone'] ?? null,
                 'password' => bcrypt('iam-managed'), // Placeholder password since auth is managed by IAM
             ]
         );

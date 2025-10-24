@@ -45,6 +45,7 @@ class IAMAuthController extends Controller
             [
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
+                'phone' => $iamUser['phone'] ?? null,
                 'password' => bcrypt('iam-managed'), // Placeholder password
             ]
         );
@@ -290,6 +291,7 @@ class IAMAuthController extends Controller
             [
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
+                'phone' => $iamUser['phone'] ?? null,
                 'password' => bcrypt('iam-managed'), // Placeholder password
             ]
         );
