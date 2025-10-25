@@ -845,4 +845,32 @@ class IAMService
             return null;
         }
     }
+
+    /**
+     * Get all users with pagination
+     * 
+     * @param string $token Authentication token
+     * @param array $params Query parameters (page, per_page, search, etc.)
+     * @return array|null Paginated user data
+     */
+    public function getAllUsers(string $token, array $params = []): ?array
+    {
+        try {
+            $response = $this->client->get('users', [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+                'query' => $params,
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM get all users failed', [
+                'error' => $e->getMessage(),
+                'params' => $params,
+            ]);
+
+            return null;
+        }
+    }
 }
