@@ -19,17 +19,15 @@ class IAMUserProvider implements UserProvider
 
     public function retrieveById($identifier)
     {
-        // This is primarily used for session-based authentication
-        $user = $this->createModel()->newQuery()->find($identifier);
+        // For IAMUser, we need to fetch from IAM since there's no local database
+        $token = session('iam_token');
 
-        if ($user && session('iam_token')) {
-            // Enrich the user with IAM session data for permissions/roles
-            $user->iam_token = session('iam_token');
-            $user->iam_permissions = session('iam_permissions', []);
-            $user->iam_roles = session('iam_roles', []);
+        if (!$token) {
+            return null;
         }
 
-        return $user;
+        // Use cached token verification to get user data
+        return $this->retrieveByIAMToken($token);
     }
 
     public function retrieveByToken($identifier, $token)
@@ -57,21 +55,20 @@ class IAMUserProvider implements UserProvider
 
         $iamUser = $iamResponse['user'];
 
-        // Create or update local user record
-        $user = $this->createModel()->newQuery()->updateOrCreate(
-            ['email' => $iamUser['email']],
-            [
-                'name' => $iamUser['name'],
-                'email' => $iamUser['email'],
-                'phone' => $iamUser['phone'] ?? null,
-                'password' => bcrypt('iam-managed'), // Placeholder password since auth is managed by IAM
-            ]
-        );
-
-        // Store IAM data temporarily for the session
-        $user->iam_token = $iamResponse['access_token'];
-        $user->iam_roles = $iamUser['roles'] ?? [];
-        $user->iam_permissions = $this->extractPermissions($iamResponse);
+        // Create virtual IAMUser (no database interaction)
+        $userClass = $this->model;
+        $user = new $userClass([
+            'id' => $iamUser['id'],
+            'name' => $iamUser['name'],
+            'email' => $iamUser['email'],
+            'phone' => $iamUser['phone'] ?? null,
+            'department_id' => $iamUser['department_id'] ?? null,
+            'position_id' => $iamUser['position_id'] ?? null,
+            'status' => $iamUser['status'] ?? 'active',
+            'iam_token' => $iamResponse['access_token'],
+            'roles' => $iamUser['roles'] ?? [],
+            'permissions' => $this->extractPermissions($iamResponse),
+        ]);
 
         return $user;
     }
@@ -89,6 +86,7 @@ class IAMUserProvider implements UserProvider
 
     /**
      * Verify IAM token and retrieve user
+     * Returns virtual IAMUser instance (no database interaction)
      */
     public function retrieveByIAMToken(string $token)
     {
@@ -100,21 +98,20 @@ class IAMUserProvider implements UserProvider
 
         $iamUser = $iamResponse['user'];
 
-        // Create or update local user record
-        $user = $this->createModel()->newQuery()->updateOrCreate(
-            ['email' => $iamUser['email']],
-            [
-                'name' => $iamUser['name'],
-                'email' => $iamUser['email'],
-                'phone' => $iamUser['phone'] ?? null,
-                'password' => bcrypt('iam-managed'), // Placeholder password since auth is managed by IAM
-            ]
-        );
-
-        // Store IAM data temporarily
-        $user->iam_token = $token;
-        $user->iam_roles = $iamUser['roles'] ?? [];
-        $user->iam_permissions = $iamResponse['permissions'] ?? [];
+        // Create virtual IAMUser (no database interaction)
+        $userClass = $this->model;
+        $user = new $userClass([
+            'id' => $iamUser['id'],
+            'name' => $iamUser['name'],
+            'email' => $iamUser['email'],
+            'phone' => $iamUser['phone'] ?? null,
+            'department_id' => $iamUser['department_id'] ?? null,
+            'position_id' => $iamUser['position_id'] ?? null,
+            'status' => $iamUser['status'] ?? 'active',
+            'iam_token' => $token,
+            'roles' => $iamUser['roles'] ?? [],
+            'permissions' => $iamResponse['permissions'] ?? $this->extractPermissions($iamResponse),
+        ]);
 
         return $user;
     }
