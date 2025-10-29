@@ -19,15 +19,32 @@ class IAMUserProvider implements UserProvider
 
     public function retrieveById($identifier)
     {
-        // For IAMUser, we need to fetch from IAM since there's no local database
-        $token = session('iam_token');
-
-        if (!$token) {
+        // Retrieve user from session (stateless - no database query)
+        if (!session('iam_user') || !session('iam_token')) {
             return null;
         }
 
-        // Use cached token verification to get user data
-        return $this->retrieveByIAMToken($token);
+        $sessionUser = session('iam_user');
+
+        // Only return user if the identifier matches
+        if ($sessionUser['id'] !== $identifier) {
+            return null;
+        }
+
+        // Create virtual IAMUser from session data
+        $userClass = $this->model;
+        return new $userClass([
+            'id' => $sessionUser['id'],
+            'name' => $sessionUser['name'],
+            'email' => $sessionUser['email'],
+            'phone' => $sessionUser['phone'] ?? null,
+            'department_id' => $sessionUser['department_id'] ?? null,
+            'position_id' => $sessionUser['position_id'] ?? null,
+            'status' => $sessionUser['status'] ?? 'active',
+            'iam_token' => session('iam_token'),
+            'permissions' => session('iam_permissions', []),
+            'roles' => session('iam_roles', []),
+        ]);
     }
 
     public function retrieveByToken($identifier, $token)

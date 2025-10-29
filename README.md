@@ -21,7 +21,7 @@ Run the complete IAM authentication service. Manage users, roles, permissions, d
 - 👥 **User/Department/Position Management** - Fetch and manage organizational data from IAM
 - 🎨 **Inertia.js Support** - Pre-built React login component
 - 🛡️ **Middleware Protection** - Protect routes with IAM authentication
-- 💾 **Local User Sync** - Automatically sync IAM users to local database
+- 💾 **Stateless User Management** - Virtual user instances with no local database storage required
 - ⚡ **Request Caching** - Minimize API calls with intelligent caching
 
 ### Server Features
@@ -104,16 +104,70 @@ AUTH_GUARD=iam
 # Optional (with defaults)
 IAM_TIMEOUT=10
 IAM_VERIFY_SSL=true
-IAM_USER_MODEL=App\Models\User
+IAM_USER_MODEL=App\Models\IAMUser
 ```
 
-### 4. Ensure User Model Exists
+### 4. Create IAMUser Model
 
-Make sure you have a User model at `app/Models/User.php` with at least these fields:
-- `id` (or uuid)
-- `name`
-- `email`
-- `password`
+Create a virtual user model at `app/Models/IAMUser.php` that implements `Authenticatable`:
+
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Notifications\Notifiable;
+
+class IAMUser implements Authenticatable
+{
+    use Notifiable;
+
+    protected array $attributes = [];
+
+    public function __construct(array $iamData)
+    {
+        $this->attributes = $iamData;
+    }
+
+    public function getAuthIdentifierName() { return 'id'; }
+    public function getAuthIdentifier() { return $this->attributes['id'] ?? null; }
+    public function getAuthPassword(): string { return ''; }
+    public function getAuthPasswordName() { return 'password'; }
+    public function getRememberToken() { return null; }
+    public function setRememberToken($value) { }
+    public function getRememberTokenName() { return null; }
+
+    public function __get($key)
+    {
+        return $this->attributes[$key] ?? null;
+    }
+
+    public function __isset($key)
+    {
+        return isset($this->attributes[$key]);
+    }
+
+    // IAM-specific helper methods
+    public function hasIAMPermission(string $permission): bool
+    {
+        return in_array($permission, $this->attributes['permissions'] ?? []);
+    }
+
+    public function hasIAMRole(string $role): bool
+    {
+        $roles = $this->attributes['roles'] ?? [];
+        foreach ($roles as $userRole) {
+            if ((is_array($userRole) ? $userRole['name'] : $userRole) === $role) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+**Note**: This model does NOT extend Eloquent and stores NO data in the database. All user data comes from IAM via session.
 
 ## Usage
 
@@ -520,11 +574,11 @@ Alternative middleware that uses Laravel's Auth guard directly:
 
 1. **User Login**: When a user submits the login form, credentials are sent to the IAM service
 2. **Token Storage**: On successful authentication, the JWT token is stored in Laravel session
-3. **User Sync**: User data from IAM is synced to your local database
-4. **Session Data**: Permissions and roles are cached in session for quick access
-5. **Request Protection**: Middleware checks token validity on each protected request
-6. **Token Caching**: Valid tokens are cached for 1 minute to reduce API calls
-7. **Permission Checks**: Permissions/roles are checked from session first, then IAM API if needed
+3. **Virtual User Creation**: User data from IAM is used to create a virtual IAMUser instance (no database storage)
+4. **Session Data**: User info, permissions, and roles are stored in session for quick access
+5. **Request Protection**: Middleware checks session and creates virtual user on each protected request
+6. **Stateless Architecture**: No local user database required - 100% reliant on IAM service
+7. **Permission Checks**: Permissions/roles are checked from session data stored during login
 
 ## Architecture
 
@@ -536,10 +590,13 @@ Alternative middleware that uses Laravel's Auth guard directly:
                               │
                               ▼
                         ┌──────────────┐
-                        │ Local Users  │
-                        │   Database   │
+                        │   Session    │
+                        │ (Virtual User│
+                        │   + Token)   │
                         └──────────────┘
 ```
+
+**Note**: Version 1.1.0+ uses a stateless architecture. User data is stored only in session, not in a local database.
 
 ## Troubleshooting
 
@@ -549,7 +606,7 @@ Check your `IAM_BASE_URL` in `.env` and ensure it's pointing to the correct IAM 
 
 ### User Not Found After Login
 
-Ensure your User model matches the `user_model` configuration and has the required fields.
+Ensure your IAMUser model implements the `Authenticatable` interface correctly and is configured in `config/auth.php`.
 
 ### Middleware Not Working
 
@@ -564,9 +621,9 @@ If you're running IAM on a different domain, ensure CORS is properly configured 
 - Always use HTTPS in production
 - Set `IAM_VERIFY_SSL=true` in production
 - Tokens are stored in encrypted Laravel sessions
-- Local passwords are placeholder values - actual auth is via IAM
+- No local password storage - actual auth is via IAM
 - Session regeneration on login prevents session fixation
-- 1-minute token cache balances security and performance
+- Virtual user instances prevent unauthorized database access
 
 ## Testing
 
