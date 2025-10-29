@@ -37,28 +37,40 @@ class IAMAuthController extends Controller
         }
 
         $iamUser = $loginResponse['user'];
-        $userModel = config('iam.user_model', \App\Models\User::class);
+        $userModel = config('iam.user_model', \App\Models\IAMUser::class);
 
-        // Create or update local user record
-        $user = $userModel::updateOrCreate(
-            ['email' => $iamUser['email']],
-            [
+        // Create virtual IAMUser (no database storage)
+        $user = new $userModel([
+            'id' => $iamUser['id'],
+            'name' => $iamUser['name'],
+            'email' => $iamUser['email'],
+            'phone' => $iamUser['phone'] ?? null,
+            'department_id' => $iamUser['department_id'] ?? null,
+            'position_id' => $iamUser['position_id'] ?? null,
+            'status' => $iamUser['status'] ?? 'active',
+            'iam_token' => $loginResponse['access_token'],
+            'roles' => $iamUser['roles'] ?? [],
+            'permissions' => $this->extractPermissions($loginResponse),
+        ]);
+
+        // Store IAM user and token in session BEFORE login
+        session([
+            'iam_user' => [
+                'id' => $iamUser['id'],
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
                 'phone' => $iamUser['phone'] ?? null,
-                'password' => bcrypt('iam-managed'), // Placeholder password
-            ]
-        );
-
-        // Log in the user with the IAM guard FIRST (this regenerates the session)
-        Auth::guard('iam')->login($user, $request->filled('remember'));
-
-        // Store IAM token and user data in session AFTER login (so it goes in the new session)
-        session([
+                'department_id' => $iamUser['department_id'] ?? null,
+                'position_id' => $iamUser['position_id'] ?? null,
+                'status' => $iamUser['status'] ?? 'active',
+            ],
             'iam_token' => $loginResponse['access_token'],
             'iam_permissions' => $this->extractPermissions($loginResponse),
             'iam_roles' => array_column($iamUser['roles'] ?? [], 'name'),
         ]);
+
+        // Log in the user with the IAM guard (this regenerates the session)
+        Auth::guard('iam')->login($user, $request->filled('remember'));
 
         // Save the session to ensure it persists
         session()->save();
@@ -283,28 +295,40 @@ class IAMAuthController extends Controller
         }
 
         $iamUser = $loginResponse['user'];
-        $userModel = config('iam.user_model', \App\Models\User::class);
+        $userModel = config('iam.user_model', \App\Models\IAMUser::class);
 
-        // Create or update local user record
-        $user = $userModel::updateOrCreate(
-            ['email' => $iamUser['email']],
-            [
+        // Create virtual IAMUser (no database storage)
+        $user = new $userModel([
+            'id' => $iamUser['id'],
+            'name' => $iamUser['name'],
+            'email' => $iamUser['email'],
+            'phone' => $iamUser['phone'] ?? null,
+            'department_id' => $iamUser['department_id'] ?? null,
+            'position_id' => $iamUser['position_id'] ?? null,
+            'status' => $iamUser['status'] ?? 'active',
+            'iam_token' => $loginResponse['access_token'],
+            'roles' => $iamUser['roles'] ?? [],
+            'permissions' => $this->extractPermissions($loginResponse),
+        ]);
+
+        // Store IAM user and token in session BEFORE login
+        session([
+            'iam_user' => [
+                'id' => $iamUser['id'],
                 'name' => $iamUser['name'],
                 'email' => $iamUser['email'],
                 'phone' => $iamUser['phone'] ?? null,
-                'password' => bcrypt('iam-managed'), // Placeholder password
-            ]
-        );
-
-        // Log in the user with the IAM guard FIRST (this regenerates the session)
-        Auth::guard('iam')->login($user, false);
-
-        // Store IAM token and user data in session AFTER login (so it goes in the new session)
-        session([
+                'department_id' => $iamUser['department_id'] ?? null,
+                'position_id' => $iamUser['position_id'] ?? null,
+                'status' => $iamUser['status'] ?? 'active',
+            ],
             'iam_token' => $loginResponse['access_token'],
             'iam_permissions' => $this->extractPermissions($loginResponse),
             'iam_roles' => array_column($iamUser['roles'] ?? [], 'name'),
         ]);
+
+        // Log in the user with the IAM guard (this regenerates the session)
+        Auth::guard('iam')->login($user, false);
 
         // Save the session to ensure it persists
         session()->save();

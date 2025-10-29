@@ -10,6 +10,8 @@ All notable changes to `laravel-iam-client` will be documented in this file.
 - `retrieveById()` now retrieves user from session data instead of database
 - `retrieveByCredentials()` creates virtual IAMUser without database interaction
 - `retrieveByIAMToken()` creates virtual IAMUser without database interaction
+- IAMAuthController `login()` method now creates virtual users and stores user data in session
+- IAMAuthController `loginWithPhone()` method now creates virtual users and stores user data in session
 
 ### Improved
 - Session-based user retrieval for better performance (no IAM API call on every request)
