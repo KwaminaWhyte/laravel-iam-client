@@ -848,7 +848,7 @@ class IAMService
 
     /**
      * Get all users with pagination
-     * 
+     *
      * @param string $token Authentication token
      * @param array $params Query parameters (page, per_page, search, etc.)
      * @return array|null Paginated user data
@@ -871,6 +871,176 @@ class IAMService
             ]);
 
             return null;
+        }
+    }
+
+    // ==================== Phone Number Management ====================
+
+    /**
+     * Get all phone numbers for the authenticated user
+     */
+    public function getUserPhoneNumbers(string $token): ?array
+    {
+        try {
+            $response = $this->client->get('user-phone-numbers', [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM get phone numbers failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Add a new phone number to the authenticated user's account
+     */
+    public function addPhoneNumber(string $token, string $phone, ?string $label = null): ?array
+    {
+        try {
+            $data = ['phone' => $phone];
+            if ($label) {
+                $data['label'] = $label;
+            }
+
+            $response = $this->client->post('user-phone-numbers', [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+                'json' => $data,
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM add phone number failed', [
+                'error' => $e->getMessage(),
+                'phone' => $phone,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Update a phone number's label
+     */
+    public function updatePhoneNumber(string $token, string $id, string $label): ?array
+    {
+        try {
+            $response = $this->client->put("user-phone-numbers/{$id}", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+                'json' => ['label' => $label],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM update phone number failed', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete a phone number
+     */
+    public function deletePhoneNumber(string $token, string $id): bool
+    {
+        try {
+            $this->client->delete("user-phone-numbers/{$id}", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            return true;
+        } catch (RequestException $e) {
+            Log::error('IAM delete phone number failed', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Set a phone number as primary
+     */
+    public function setPhoneNumberAsPrimary(string $token, string $id): ?array
+    {
+        try {
+            $response = $this->client->post("user-phone-numbers/{$id}/set-primary", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM set primary phone number failed', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Send verification OTP to a phone number
+     */
+    public function sendPhoneNumberVerification(string $token, string $id): ?array
+    {
+        try {
+            $response = $this->client->post("user-phone-numbers/{$id}/send-verification", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM send phone verification failed', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Verify a phone number with OTP
+     */
+    public function verifyPhoneNumber(string $token, string $id, string $otp): ?array
+    {
+        try {
+            $response = $this->client->post("user-phone-numbers/{$id}/verify", [
+                'headers' => [
+                    'Authorization' => "Bearer {$token}",
+                ],
+                'json' => ['otp' => $otp],
+            ]);
+
+            return json_decode($response->getBody()->getContents(), true);
+        } catch (RequestException $e) {
+            Log::error('IAM verify phone number failed', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+            ]);
+
+            throw $e;
         }
     }
 }
