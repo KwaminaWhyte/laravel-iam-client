@@ -1003,6 +1003,14 @@ class IAMService
     public function sendPhoneNumberVerification(string $token, string $id): ?array
     {
         try {
+            Log::info('IAMService: Sending phone verification request', [
+                'id' => $id,
+                'has_token' => !empty($token),
+                'token_length' => strlen($token),
+                'token_prefix' => substr($token, 0, 20) . '...',
+                'url' => $this->baseUrl . "/user-phone-numbers/{$id}/send-verification",
+            ]);
+
             $response = $this->client->post("user-phone-numbers/{$id}/send-verification", [
                 'headers' => [
                     'Authorization' => "Bearer {$token}",
@@ -1011,9 +1019,15 @@ class IAMService
 
             return json_decode($response->getBody()->getContents(), true);
         } catch (RequestException $e) {
+            $statusCode = $e->hasResponse() ? $e->getResponse()->getStatusCode() : 'no_response';
+            $responseBody = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : 'no_body';
+
             Log::error('IAM send phone verification failed', [
                 'error' => $e->getMessage(),
+                'status_code' => $statusCode,
+                'response_body' => $responseBody,
                 'id' => $id,
+                'token_length' => strlen($token),
             ]);
 
             throw $e;
