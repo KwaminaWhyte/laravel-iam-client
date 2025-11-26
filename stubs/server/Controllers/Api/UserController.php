@@ -17,10 +17,10 @@ class UserController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'permission:users.read'])->only(['index', 'show']);
-        $this->middleware(['auth:sanctum', 'permission:users.create'])->only('store');
-        $this->middleware(['auth:sanctum', 'permission:users.update'])->only('update');
-        $this->middleware(['auth:sanctum', 'permission:users.delete'])->only('destroy');
+        $this->middleware(['auth:sanctum', 'permission:iam:users.read'])->only(['index', 'show']);
+        $this->middleware(['auth:sanctum', 'permission:iam:users.create'])->only('store');
+        $this->middleware(['auth:sanctum', 'permission:iam:users.update'])->only('update');
+        $this->middleware(['auth:sanctum', 'permission:iam:users.delete'])->only('destroy');
     }
 
     public function index(Request $request)

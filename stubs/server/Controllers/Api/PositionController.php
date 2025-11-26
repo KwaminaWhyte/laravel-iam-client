@@ -14,11 +14,11 @@ class PositionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'permission:positions.read'])->only(['index', 'show']);
-        $this->middleware(['auth:sanctum', 'permission:positions.create'])->only('store');
-        $this->middleware(['auth:sanctum', 'permission:positions.update'])->only('update');
-        $this->middleware(['auth:sanctum', 'permission:positions.delete'])->only('destroy');
-        $this->middleware(['auth:sanctum', 'permission:positions.assign'])->only(['assignUsers', 'removeUsers']);
+        $this->middleware(['auth:sanctum', 'permission:iam:positions.read'])->only(['index', 'show']);
+        $this->middleware(['auth:sanctum', 'permission:iam:positions.create'])->only('store');
+        $this->middleware(['auth:sanctum', 'permission:iam:positions.update'])->only('update');
+        $this->middleware(['auth:sanctum', 'permission:iam:positions.delete'])->only('destroy');
+        $this->middleware(['auth:sanctum', 'permission:iam:positions.assign'])->only(['assignUsers', 'removeUsers']);
     }
 
     public function index(Request $request)

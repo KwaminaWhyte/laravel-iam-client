@@ -13,11 +13,11 @@ class RoleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['auth:sanctum', 'permission:roles.read'])->only(['index', 'show']);
-        $this->middleware(['auth:sanctum', 'permission:roles.create'])->only('store');
-        $this->middleware(['auth:sanctum', 'permission:roles.update'])->only('update');
-        $this->middleware(['auth:sanctum', 'permission:roles.delete'])->only('destroy');
-        $this->middleware(['auth:sanctum', 'permission:roles.assign'])->only(['assignPermissions', 'removePermissions']);
+        $this->middleware(['auth:sanctum', 'permission:iam:roles.read'])->only(['index', 'show']);
+        $this->middleware(['auth:sanctum', 'permission:iam:roles.create'])->only('store');
+        $this->middleware(['auth:sanctum', 'permission:iam:roles.update'])->only('update');
+        $this->middleware(['auth:sanctum', 'permission:iam:roles.delete'])->only('destroy');
+        $this->middleware(['auth:sanctum', 'permission:iam:roles.assign'])->only(['assignPermissions', 'removePermissions']);
     }
 
     public function index(Request $request)
