@@ -2,9 +2,16 @@
 
 All notable changes to `laravel-iam-client` will be documented in this file.
 
+## [1.2.0] - 2025-11-26
+
+### Changed
+
+- Update permissions to use namespace
+
 ## [1.1.0] - 2025-10-29
 
 ### Changed
+
 - **BREAKING**: Removed automatic user synchronization to local database
 - IAMUserProvider now creates virtual user instances instead of database records
 - `retrieveById()` now retrieves user from session data instead of database
@@ -14,13 +21,16 @@ All notable changes to `laravel-iam-client` will be documented in this file.
 - IAMAuthController `loginWithPhone()` method now creates virtual users and stores user data in session
 
 ### Improved
+
 - Session-based user retrieval for better performance (no IAM API call on every request)
 - Complete stateless architecture - no local user data storage required
 - Applications can now be 100% reliant on IAM service for user management
 - Reduced database queries during authentication flow
 
 ### Migration Guide
+
 To upgrade from v1.0.0 to v1.1.0:
+
 1. Create an `IAMUser` model that implements `Authenticatable` interface (not Eloquent)
 2. Remove foreign key constraints on user_id columns
 3. Drop the `users` table if you want complete statelessness
@@ -32,6 +42,7 @@ See the updated README for implementation details.
 ## [1.0.0] - 2025-09-30
 
 ### Added
+
 - Initial release
 - IAM Guard implementation for Laravel authentication
 - IAM User Provider for user management
@@ -49,6 +60,7 @@ See the updated README for implementation details.
 - Auto-discovery for Laravel
 
 ### Features
+
 - JWT token-based authentication
 - Centralized user management via IAM service
 - Local user record synchronization
@@ -63,6 +75,7 @@ See the updated README for implementation details.
 - Guest middleware protection
 
 ### Security
+
 - Session regeneration on login
 - Encrypted session storage for tokens
 - HTTPS support with SSL verification
