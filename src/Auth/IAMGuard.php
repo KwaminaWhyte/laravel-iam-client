@@ -53,8 +53,18 @@ class IAMGuard implements Guard
             return $this->user;
         }
 
-        // Verify with IAM service and cache for this request
-        $this->user = $this->provider->retrieveByIAMToken($token);
+        // Try to build user from middleware-verified data or session first (no API call)
+        $middlewareUser = $this->request->attributes->get('iam_user');
+        if ($middlewareUser && is_array($middlewareUser)) {
+            $this->user = $this->provider->createUserFromData($middlewareUser, $token);
+        } elseif (session()->has('iam_user') && session()->has('iam_token')) {
+            $this->user = $this->provider->retrieveById(session('iam_user.id') ?? session('iam_user')['id'] ?? null);
+        }
+
+        // Only call IAM API as a last resort
+        if (!$this->user) {
+            $this->user = $this->provider->retrieveByIAMToken($token);
+        }
 
         // Enrich user with session data if available (session data is more reliable)
         if ($this->user && session()->has('iam_permissions')) {

@@ -49,6 +49,11 @@ class IAMSessionAuth
         $request->attributes->set('iam_user', $authData['user']);
         $request->attributes->set('iam_authenticated', true);
 
+        // Keep session user data fresh so the guard can use it without API calls
+        if (!session()->has('iam_user') || session('iam_user.id') !== ($authData['user']['id'] ?? null)) {
+            session(['iam_user' => $authData['user']]);
+        }
+
         // Share with Inertia
         $request->merge(['auth' => ['user' => $authData['user']]]);
 

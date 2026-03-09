@@ -5,6 +5,7 @@ namespace Adamus\LaravelIamClient\Auth;
 use Adamus\LaravelIamClient\Services\IAMService;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Support\Facades\Cache;
 
 class IAMUserProvider implements UserProvider
 {
@@ -102,35 +103,47 @@ class IAMUserProvider implements UserProvider
     }
 
     /**
+     * Create a virtual IAMUser from raw user data (no API call).
+     */
+    public function createUserFromData(array $userData, string $token)
+    {
+        $userClass = $this->model;
+        return new $userClass([
+            'id' => $userData['id'],
+            'name' => $userData['name'],
+            'email' => $userData['email'],
+            'phone' => $userData['phone'] ?? null,
+            'department_id' => $userData['department_id'] ?? null,
+            'position_id' => $userData['position_id'] ?? null,
+            'status' => $userData['status'] ?? 'active',
+            'iam_token' => $token,
+            'roles' => $userData['roles'] ?? [],
+            'permissions' => session('iam_permissions', []),
+        ]);
+    }
+
+    /**
      * Verify IAM token and retrieve user
      * Returns virtual IAMUser instance (no database interaction)
+     * Uses the same cache key as IAMSessionAuth middleware to avoid duplicate API calls.
      */
     public function retrieveByIAMToken(string $token)
     {
-        $iamResponse = $this->iamService->verifyToken($token);
+        $cacheKey = 'iam_token_' . md5($token);
+
+        $iamResponse = Cache::remember($cacheKey, 60, function () use ($token) {
+            return $this->iamService->verifyToken($token);
+        });
 
         if (!$iamResponse || !isset($iamResponse['user'])) {
+            Cache::forget($cacheKey);
             return null;
         }
 
-        $iamUser = $iamResponse['user'];
-
-        // Create virtual IAMUser (no database interaction)
-        $userClass = $this->model;
-        $user = new $userClass([
-            'id' => $iamUser['id'],
-            'name' => $iamUser['name'],
-            'email' => $iamUser['email'],
-            'phone' => $iamUser['phone'] ?? null,
-            'department_id' => $iamUser['department_id'] ?? null,
-            'position_id' => $iamUser['position_id'] ?? null,
-            'status' => $iamUser['status'] ?? 'active',
-            'iam_token' => $token,
-            'roles' => $iamUser['roles'] ?? [],
-            'permissions' => $iamResponse['permissions'] ?? $this->extractPermissions($iamResponse),
-        ]);
-
-        return $user;
+        return $this->createUserFromData(
+            $iamResponse['user'],
+            $token
+        );
     }
 
     /**
